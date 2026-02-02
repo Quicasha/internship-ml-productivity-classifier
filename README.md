@@ -49,3 +49,79 @@ Accurate occupancy detection has practical, real-world applications such as:
 The dataset used in this project is **widely referenced in academic literature**,
 making it suitable both for learning purposes and realistic experimentation.
 
+---
+
+## 📁 Project Structure
+
+```text
+internship-ml-productivity-classifier/
+│
+├── data/
+│   └── occupancy.csv
+│       # Original time-ordered environmental sensor dataset
+│
+├── src/
+│   ├── load_data.py
+│   │   # Dataset loading utilities
+│   │
+│   ├── preprocess.py
+│   │   # Feature selection and dataset preparation logic
+│   │
+│   ├── clean_data.py
+│   │   # Data cleaning and optional time-based feature engineering
+│   │
+│   ├── metrics.py
+│   │   # Centralized metric computation and formatted evaluation output
+│   │
+│   ├── train_dummy.py
+│   │   # Baseline model (DummyClassifier – most frequent class)
+│   │
+│   ├── train_logistic.py
+│   │   # Logistic Regression model with feature scaling
+│   │
+│   ├── train_random_forest.py
+│   │   # Random Forest classifier
+│   │
+│   ├── cross_validation.py
+│   │   # Cross-validation logic for robust model evaluation
+│   │
+│   ├── compare_models.py
+│   │   # Unified model comparison and result aggregation
+│   │
+│   ├── ablation_plot.py
+│   │   # Feature ablation analysis and visualization
+│   │
+│   ├── feature_importance.py
+│   │   # Random Forest feature importance analysis
+│   │
+│   ├── realtime_simulation.py
+│   │   # Sliding-window simulation to mimic online prediction behavior
+│   │
+│   └── run.py
+│       # Main entry point (CLI) for training, evaluation, and comparison
+│
+├── results/
+│   ├── model_comparison.csv
+│   │   # Side-by-side performance comparison of all models
+│   │
+│   ├── metrics_cv.csv
+│   │   # Cross-validation summary statistics
+│   │
+│   ├── metrics_cv_folds.csv
+│   │   # Per-fold cross-validation metrics
+│   │
+│   ├── feature_importance.png
+│   │   # Feature importance visualization
+│   │
+│   └── ablation_test.png
+│       # Feature ablation accuracy comparison
+│
+├── notebooks/
+│   # Optional exploratory notebooks
+│
+├── requirements.txt
+│
+├── .gitignore
+│
+└── README.md
+```
