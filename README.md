@@ -1,4 +1,4 @@
-# 🏠 Occupancy Prediction from Environmental Sensor Data
+# Occupancy Prediction from Environmental Sensor Data
 
 > End-to-end machine learning project for room occupancy detection using environmental sensor data.
 
@@ -48,3 +48,4 @@ Accurate occupancy detection has practical, real-world applications such as:
 
 The dataset used in this project is **widely referenced in academic literature**,
 making it suitable both for learning purposes and realistic experimentation.
+
