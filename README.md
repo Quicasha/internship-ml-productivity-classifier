@@ -1,28 +1,50 @@
-# Occupancy Prediction from Environmental Sensor Data
+# 🏠 Occupancy Prediction from Environmental Sensor Data
 
-This project focuses on predicting room occupancy using environmental sensor data.
-The goal is to evaluate how well different machine learning models can infer human presence
-based on temperature, humidity, light intensity, CO₂ concentration, and derived features.
+> End-to-end machine learning project for room occupancy detection using environmental sensor data.
 
-The project is designed as a complete, end-to-end machine learning pipeline:
-from data loading and preprocessing, through model training and evaluation,
-to baseline comparison and cross-validation.
+---
 
-Special attention is paid to proper evaluation practices in order to avoid overly optimistic
-results caused by data leakage or lucky train/test splits.
+## 📌 Project Overview
 
-Given time-ordered sensor measurements, the task is to classify whether a room is occupied (1)
-or not occupied (0) at a given time step.
+This project focuses on predicting **room occupancy** based on environmental sensor measurements.
+The objective is to evaluate how well different machine learning models can infer **human presence**
+from physical signals such as temperature, humidity, light intensity, CO₂ concentration, and derived features.
 
-This is a binary classification problem with temporal structure,
-where model evaluation must respect the chronological nature of the data.
+The project is implemented as a **complete machine learning pipeline**, covering:
 
-Accurate occupancy detection has practical applications in:
-- smart building automation,
-- energy efficiency optimization,
-- HVAC system control,
-- privacy-preserving presence detection (no cameras).
+- data loading and preprocessing,
+- baseline modeling,
+- supervised model training,
+- robust evaluation and comparison,
+- and analysis of model behavior.
 
-The dataset used in this project is commonly referenced in academic literature,
+A strong emphasis is placed on **proper evaluation practices** to avoid misleading results caused by
+data leakage or overly optimistic train/test splits.
+
+---
+
+## 🎯 Problem Definition
+
+Given **time-ordered sensor measurements**, the task is to classify whether a room is:
+
+- **occupied (1)**  
+- **not occupied (0)**  
+
+at a given time step.
+
+This is a **binary classification problem with temporal structure**, meaning that
+model evaluation must respect the **chronological order of the data**.
+
+---
+
+## 🧠 Why This Problem Matters
+
+Accurate occupancy detection has practical, real-world applications such as:
+
+- 🏢 smart building automation,
+- ⚡ energy efficiency optimization,
+- ❄️ HVAC system control,
+- 🔒 privacy-preserving presence detection (no cameras involved).
+
+The dataset used in this project is **widely referenced in academic literature**,
 making it suitable both for learning purposes and realistic experimentation.
-
