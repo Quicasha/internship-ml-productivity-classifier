@@ -125,3 +125,39 @@ internship-ml-productivity-classifier/
 │
 └── README.md
 ```
+---
+
+## 🚀 How to Run
+
+This project is designed to be executed via a single CLI entry point (run.py).
+No notebooks are required to reproduce results.
+
+1. Environment setup
+
+```text
+Python 3.10+
+```
+
+Create virtual environment (recommended)
+```text
+python -m venv .venv
+```
+
+Activate it:
+- Windows
+```text
+.venv/Scripts/activate
+```
+
+- Linux/macOS
+```text
+source .venv/bin/activate
+```
+
+Install dependencies
+```text
+pip install -r requirements.txt
+```
+
+
+
