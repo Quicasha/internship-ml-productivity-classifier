@@ -166,12 +166,13 @@ data/occupancy.csv
 ```
 
 It is a time-ordered environmental sensor dataset with the following columns:
-- Temperature
-- Humidity
-- Light
-- CO2
-- HumidityRatio
-- Occupancy (target label: 0 or 1)
+- Temperature;
+- Humidity;
+- Light;
+- CO2;
+- HumidityRatio;
+- Occupancy (target label: 0 or 1).
+ 
 No manual preprocessing is required before running the pipeline.
 
 
@@ -198,4 +199,5 @@ Each command prints:
 - confusion matrix,
 - precision / recall / F1,
 - overall accuracy.
+
 
