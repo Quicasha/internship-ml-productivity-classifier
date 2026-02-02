@@ -1,74 +1,84 @@
+"""
+Logistic Regression training + evaluation (holdout split).
+
+Used by:
+- run.py (via build_model)
+- can be executed standalone
+"""
+
 from __future__ import annotations
 
-from typing import Tuple, Union
+from pathlib import Path
+from typing import Dict, Any
 
-import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
 
 from preprocess import prepare_dataset
-from metrics import compute_metrics
+from metrics import pretty_print, compute_metrics
+
+RESULTS_DIR = Path("results")
+RESULTS_DIR.mkdir(exist_ok=True)
 
 
-def train_logistic(
-    random_state: int = 42,
-    test_size: float = 0.2,
-    C: float = 1.0,
-    max_iter: int = 2000,
-    return_preds: bool = False,
-) -> Union["object", Tuple["object", np.ndarray, np.ndarray]]:
+MODEL_NAME = "logreg"
+
+
+def build_model(random_state: int = 42) -> Pipeline:
     """
-    Train and evaluate Logistic Regression on a stratified train/test split.
+    Build a Logistic Regression pipeline with scaling.
 
-    Args:
-        random_state: Reproducibility seed.
-        test_size: Proportion of dataset reserved for testing.
-        C: Inverse regularization strength (smaller C => stronger regularization).
-        max_iter: Max solver iterations to ensure convergence.
-        return_preds: If True, return (metrics, y_test, y_pred).
+    Why StandardScaler:
+    - Logistic regression is sensitive to feature magnitudes
+    - Scaling makes optimization stable and coefficients comparable
 
-    Returns:
-        metrics OR (metrics, y_test, y_pred) if return_preds=True
+    Solver notes:
+    - liblinear: good for small/medium datasets and binary classification
+    - max_iter: bump it to avoid non-convergence
     """
-    ds = prepare_dataset()
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        ds.X,
-        ds.y,
-        test_size=test_size,
-        shuffle=True,
-        stratify=ds.y,
-        random_state=random_state,
-    )
-
-    # Pipeline prevents leakage: scaler is fit on train only
-    model = Pipeline(
+    return Pipeline(
         steps=[
             ("scaler", StandardScaler()),
             (
                 "clf",
                 LogisticRegression(
-                    C=C,
-                    max_iter=max_iter,
+                    solver="liblinear",
+                    max_iter=2000,
                     random_state=random_state,
-                    solver="lbfgs",
                 ),
             ),
         ]
     )
 
+
+def train_and_eval(test_size: float = 0.2, random_state: int = 42) -> Dict[str, Any]:
+    """
+    Train on a holdout split and return metrics as a dict.
+    """
+    X_train, X_test, y_train, y_test = prepare_dataset(
+        test_size=test_size,
+        random_state=random_state,
+    )
+
+    model = build_model(random_state=random_state)
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
-    metrics = compute_metrics(y_test, y_pred)
+    print("\n=== LogisticRegression (holdout) ===")
+    pretty_print(y_test, y_pred)
 
-    if return_preds:
-        return metrics, np.asarray(y_test), np.asarray(y_pred)
-    return metrics
+    row = compute_metrics(y_test, y_pred).to_row(model_name="LogisticRegression")
+    return row
+
+
+def main() -> None:
+    row = train_and_eval()
+    out_path = RESULTS_DIR / "metrics_logreg_holdout.csv"
+    pd.DataFrame([row]).to_csv(out_path, index=False)
+    print(f"\nSaved: {out_path.as_posix()}")
 
 
 if __name__ == "__main__":
-    m = train_logistic(return_preds=False)
-    print(f"Accuracy: {m.accuracy:.6f}")
+    main()

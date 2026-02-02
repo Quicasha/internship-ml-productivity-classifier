@@ -1,64 +1,75 @@
+"""
+Random Forest training + evaluation (holdout split).
+
+Used by:
+- run.py (via build_model)
+- can be executed standalone
+"""
+
 from __future__ import annotations
 
-from typing import Tuple, Union
+from pathlib import Path
+from typing import Dict, Any
 
-import numpy as np
+import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 
 from preprocess import prepare_dataset
-from metrics import compute_metrics
+from metrics import pretty_print, compute_metrics
+
+RESULTS_DIR = Path("results")
+RESULTS_DIR.mkdir(exist_ok=True)
 
 
-def train_random_forest(
-    random_state: int = 42,
-    test_size: float = 0.2,
-    n_estimators: int = 300,
-    max_depth: int | None = None,
-    return_preds: bool = False,
-) -> Union["object", Tuple["object", np.ndarray, np.ndarray]]:
+MODEL_NAME = "rf"
+
+
+def build_model(random_state: int = 42) -> RandomForestClassifier:
     """
-    Train and evaluate RandomForest on a stratified train/test split.
+    Build a RandomForest model with sane defaults.
 
-    Args:
-        random_state: Reproducibility seed.
-        test_size: Proportion of dataset reserved for testing.
-        n_estimators: Number of trees in the forest.
-        max_depth: Optional depth limit to control overfitting.
-        return_preds: If True, return (metrics, y_test, y_pred).
-
-    Returns:
-        metrics OR (metrics, y_test, y_pred) if return_preds=True
+    Notes:
+    - n_estimators: more trees reduces variance (usually improves stability)
+    - class_weight: helps if classes are imbalanced (Occupancy often is)
+    - n_jobs=-1: use all CPU cores
     """
-    ds = prepare_dataset()
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        ds.X,
-        ds.y,
-        test_size=test_size,
-        shuffle=True,
-        stratify=ds.y,
-        random_state=random_state,
-    )
-
-    model = RandomForestClassifier(
-        n_estimators=n_estimators,
-        max_depth=max_depth,
+    return RandomForestClassifier(
+        n_estimators=300,
+        max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        class_weight="balanced",
         random_state=random_state,
         n_jobs=-1,
     )
-    model.fit(X_train, y_train)
 
+
+def train_and_eval(test_size: float = 0.2, random_state: int = 42) -> Dict[str, Any]:
+    """
+    Train on a holdout split and return metrics as a dict.
+    """
+    X_train, X_test, y_train, y_test = prepare_dataset(
+        test_size=test_size,
+        random_state=random_state,
+    )
+
+    model = build_model(random_state=random_state)
+    model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
 
-    metrics = compute_metrics(y_test, y_pred)
+    print("\n=== RandomForest (holdout) ===")
+    pretty_print(y_test, y_pred)
 
-    if return_preds:
-        return metrics, np.asarray(y_test), np.asarray(y_pred)
-    return metrics
+    row = compute_metrics(y_test, y_pred).to_row(model_name="RandomForest")
+    return row
+
+
+def main() -> None:
+    row = train_and_eval()
+    out_path = RESULTS_DIR / "metrics_rf_holdout.csv"
+    pd.DataFrame([row]).to_csv(out_path, index=False)
+    print(f"\nSaved: {out_path.as_posix()}")
 
 
 if __name__ == "__main__":
-    # Keep script runnable for quick manual checks
-    m = train_random_forest(return_preds=False)
-    print(f"Accuracy: {m.accuracy:.6f}")
+    main()
