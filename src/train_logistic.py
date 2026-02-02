@@ -1,46 +1,74 @@
+from __future__ import annotations
+
+from typing import Tuple, Union
+
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from preprocess import prepare_data
-from metrics import pretty_print
+from preprocess import prepare_dataset
+from metrics import compute_metrics
 
 
-def build_model(random_state: int = 42) -> Pipeline:
+def train_logistic(
+    random_state: int = 42,
+    test_size: float = 0.2,
+    C: float = 1.0,
+    max_iter: int = 2000,
+    return_preds: bool = False,
+) -> Union["object", Tuple["object", np.ndarray, np.ndarray]]:
     """
-    Build Logistic Regression model with proper feature scaling.
-    Scaling is mandatory for linear models to behave correctly.
+    Train and evaluate Logistic Regression on a stratified train/test split.
+
+    Args:
+        random_state: Reproducibility seed.
+        test_size: Proportion of dataset reserved for testing.
+        C: Inverse regularization strength (smaller C => stronger regularization).
+        max_iter: Max solver iterations to ensure convergence.
+        return_preds: If True, return (metrics, y_test, y_pred).
+
+    Returns:
+        metrics OR (metrics, y_test, y_pred) if return_preds=True
     """
-    return Pipeline(
+    ds = prepare_dataset()
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        ds.X,
+        ds.y,
+        test_size=test_size,
+        shuffle=True,
+        stratify=ds.y,
+        random_state=random_state,
+    )
+
+    # Pipeline prevents leakage: scaler is fit on train only
+    model = Pipeline(
         steps=[
             ("scaler", StandardScaler()),
             (
-                "logreg",
+                "clf",
                 LogisticRegression(
-                    max_iter=1000,
-                    class_weight="balanced",
+                    C=C,
+                    max_iter=max_iter,
                     random_state=random_state,
+                    solver="lbfgs",
                 ),
             ),
         ]
     )
 
-
-def train_logistic() -> None:
-    """
-    Train + evaluate Logistic Regression using a standard train/test split.
-    """
-    X_train, X_test, y_train, y_test = prepare_data(return_full=False)
-
-    model = build_model()
     model.fit(X_train, y_train)
-
     y_pred = model.predict(X_test)
 
-    print("Accuracy:", float(np.mean(y_pred == y_test)))
-    pretty_print(y_test, y_pred)
+    metrics = compute_metrics(y_test, y_pred)
+
+    if return_preds:
+        return metrics, np.asarray(y_test), np.asarray(y_pred)
+    return metrics
 
 
 if __name__ == "__main__":
-    train_logistic()
+    m = train_logistic(return_preds=False)
+    print(f"Accuracy: {m.accuracy:.6f}")

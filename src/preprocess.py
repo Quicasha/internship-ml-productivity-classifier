@@ -1,49 +1,66 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Tuple
+
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
-from load_data import load_data  # <-- THIS WAS MISSING
 
-DATA_PATH = "data/occupancy.csv"
+# Project-relative dataset path (works when scripts are run from repo root)
+DATA_PATH = Path("data") / "occupancy.csv"
 
-FEATURES = [
-    "Temperature",
-    "Humidity",
-    "Light",
-    "CO2",
-    "HumidityRatio",
-]
+# Columns used as model inputs
+FEATURES = ["Temperature", "Humidity", "Light", "CO2", "HumidityRatio"]
 
+# Target column (binary label: 0 = unoccupied, 1 = occupied)
 TARGET = "Occupancy"
 
 
-def prepare_data(return_full: bool = False):
+@dataclass(frozen=True)
+class Dataset:
+    """Container for ML-ready data."""
+    X: pd.DataFrame
+    y: pd.Series
+    df: pd.DataFrame
+
+
+def load_raw_data(path: Path = DATA_PATH) -> pd.DataFrame:
     """
-    Prepare features and target variable for modeling.
+    Load the raw CSV file.
 
-    If return_full=True:
-        Returns full feature matrix X and target vector y
-        without performing a train/test split.
-        Used for time-series cross-validation.
-
-    If return_full=False:
-        Returns X_train, X_test, y_train, y_test
-        using a standard random split.
+    Notes:
+    - The dataset has an 'id' column which is just a row identifier.
+    - The 'date' column is a timestamp; we keep it in df for potential time-based logic,
+      but models typically use numeric sensor features defined in FEATURES.
     """
+    if not path.exists():
+        raise FileNotFoundError(f"Dataset not found at: {path.resolve()}")
 
-    df = load_data()
+    df = pd.read_csv(path)
 
-    X = df[FEATURES]
-    y = df[TARGET]
+    # Defensive cleanup: strip whitespace from column names if present
+    df.columns = [c.strip() for c in df.columns]
 
-    if return_full:
-        return X, y
+    return df
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.2,
-        random_state=42,
-        stratify=y,
-    )
 
-    return X_train, X_test, y_train, y_test
+def prepare_dataset(path: Path = DATA_PATH) -> Dataset:
+    """
+    Return ML-ready (X, y) plus the full raw dataframe.
+
+    This is the single source of truth for:
+    - which features are used
+    - which column is the target
+    - where the dataset is loaded from
+    """
+    df = load_raw_data(path)
+
+    missing = [c for c in FEATURES + [TARGET] if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing required columns in CSV: {missing}")
+
+    X = df[FEATURES].copy()
+    y = df[TARGET].copy()
+
+    return Dataset(X=X, y=y, df=df)
