@@ -1,33 +1,39 @@
-import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 
 from preprocess import prepare_data
-from metrics import compute_metrics, pretty_print
+from metrics import pretty_print
 
 
-def train_random_forest(random_state: int = 42):
-    X, y = prepare_data()
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=random_state, stratify=y
-    )
-
-    model = RandomForestClassifier(
-        n_estimators=200,
+def build_model(random_state: int = 42) -> RandomForestClassifier:
+    """
+    Build a Random Forest classifier with sane defaults.
+    Keeping this as a function lets other scripts (CV, realtime sim)
+    reuse the exact same model config.
+    """
+    return RandomForestClassifier(
+        n_estimators=300,
         random_state=random_state,
-        n_jobs=-1
+        n_jobs=-1,
+        class_weight="balanced",
     )
 
+
+def train_random_forest() -> None:
+    """
+    Train + evaluate Random Forest using a standard train/test split.
+    Prints metrics to console.
+    """
+    X_train, X_test, y_train, y_test = prepare_data(return_full=False)
+
+    model = build_model()
     model.fit(X_train, y_train)
+
     y_pred = model.predict(X_test)
 
+    print("Accuracy:", float(np.mean(y_pred == y_test)))
     pretty_print(y_test, y_pred)
-    metrics = compute_metrics(y_test, y_pred)
-
-    return metrics
 
 
 if __name__ == "__main__":
-    m = train_random_forest()
-    print("\nAccuracy:", m.accuracy)
+    train_random_forest()
