@@ -1,0 +1,11 @@
+# Core numerical computing
+numpy>=1.23
+
+# Data handling
+pandas>=1.5
+
+# Machine learning
+scikit-learn>=1.2
+
+# Plotting
+matplotlib>=3.7
