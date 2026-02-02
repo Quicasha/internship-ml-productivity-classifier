@@ -128,36 +128,74 @@ internship-ml-productivity-classifier/
 ---
 
 ## 🚀 How to Run
-
 This project is designed to be executed via a single CLI entry point (run.py).
 No notebooks are required to reproduce results.
 
-1. Environment setup
+### 1. Environment setup
 
 ```text
 Python 3.10+
 ```
 
 Create virtual environment (recommended)
-```text
+```bash
 python -m venv .venv
 ```
 
 Activate it:
 - Windows
-```text
+```bash
 .venv/Scripts/activate
 ```
 
 - Linux/macOS
-```text
+```bash
 source .venv/bin/activate
 ```
 
 Install dependencies
-```text
+```bash
 pip install -r requirements.txt
 ```
 
+### 2. Dataset
 
+The dataset is expected at:
+```bash
+data/occupancy.csv
+```
+
+It is a time-ordered environmental sensor dataset with the following columns:
+- Temperature
+- Humidity
+- Light
+- CO2
+- HumidityRatio
+- Occupancy (target label: 0 or 1)
+No manual preprocessing is required before running the pipeline.
+
+
+### 3. Train individual models
+
+All training scripts can be executed directly, but the recommended way is via ```run.py```.
+
+Random Forest
+```bash
+python src/run.py train --model rf
+```
+
+Logistic Regression (with feature scaling)
+```bash
+python src/run.py train --model logreg
+```
+
+Baseline (DummyClassifier – most frequent class)
+```bash
+python src/run.py train --model dummy
+```
+
+Each command prints:
+- confusion matrix,
+- precision / recall / F1,
+- overall accuracy.
 
