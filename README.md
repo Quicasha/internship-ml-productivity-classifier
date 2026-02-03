@@ -219,3 +219,69 @@ Containing:
 - confusion matrix components (TN / FP / FN / TP).
 
 
+### 5. Cross-validation (robust evaluation)
+
+To avoid optimistic results from a single train/test split, run:
+```bash
+python src/run.py cross-validate
+```
+
+Outputs:
+```text
+results/metrics_cv.csv
+results/metrics_cv_folds.csv
+```
+
+This provides:
+- mean and standard deviation across folds;
+- per-fold performance metrics;
+- evidence that results are not due to a lucky split.
+
+
+### 6. Feature analysis
+
+Feature importance (Random Forest)
+```bash
+python src/feature_importance.py
+```
+
+Output:
+```text
+results/feature_importance.png
+```
+
+Feature ablation study
+```bash
+python src/ablation_plot.py
+```
+
+Output:
+```text
+results/ablation_test.png
+```
+
+These analyses help explain which sensor signals matter most.
+
+
+### 7. Real-time simulation (optional)
+
+To simulate online prediction behavior using a sliding time window:
+```bash
+python src/realtime_simulation.py
+```
+This mimics how the model would behave in a streaming / deployment-like scenario.
+
+
+### 8. Reproducing all results
+
+Minimal full run sequence:
+```bash
+pip install -r requirements.txt
+python src/run.py train --model rf
+python src/run.py train --model logreg
+python src/run.py train --model dummy
+python src/run.py compare
+python src/run.py cross-validate
+```
+All outputs are saved under results/.
+
