@@ -1,3 +1,7 @@
+<p align="right">
+🇺🇸 English | <a href="README.lt.md">🇱🇹 Lietuvių</a>
+</p>
+
 # Occupancy Prediction from Environmental Sensor Data
 
 > End-to-end machine learning project for room occupancy detection using environmental sensor data.
@@ -284,4 +288,5 @@ python src/run.py compare
 python src/run.py cross-validate
 ```
 All outputs are saved under results/.
+
 
