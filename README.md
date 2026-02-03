@@ -12,10 +12,10 @@ from physical signals such as temperature, humidity, light intensity, CO₂ conc
 
 The project is implemented as a **complete machine learning pipeline**, covering:
 
-- data loading and preprocessing,
-- baseline modeling,
-- supervised model training,
-- robust evaluation and comparison,
+- data loading and preprocessing;
+- baseline modeling;
+- supervised model training;
+- robust evaluation and comparison;
 - and analysis of model behavior.
 
 A strong emphasis is placed on **proper evaluation practices** to avoid misleading results caused by
@@ -41,9 +41,9 @@ model evaluation must respect the **chronological order of the data**.
 
 Accurate occupancy detection has practical, real-world applications such as:
 
-- 🏢 smart building automation,
-- ⚡ energy efficiency optimization,
-- ❄️ HVAC system control,
+- 🏢 smart building automation;
+- ⚡ energy efficiency optimization;
+- ❄️ HVAC system control;
 - 🔒 privacy-preserving presence detection (no cameras involved).
 
 The dataset used in this project is **widely referenced in academic literature**,
@@ -196,8 +196,26 @@ python src/run.py train --model dummy
 ```
 
 Each command prints:
-- confusion matrix,
-- precision / recall / F1,
+- confusion matrix;
+- precision / recall / F1;
 - overall accuracy.
+
+
+### 4. Compare all models (hold-out evaluation)
+
+To run *side-by-side comparison* of all models on the same split:
+```bash
+python src/run.py compare
+```
+
+This generates
+```text
+results/model_comparison.csv
+```
+
+Containing:
+- accuracy;
+- class-wise precision / recall / F1;
+- confusion matrix components (TN / FP / FN / TP).
 
 
