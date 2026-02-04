@@ -129,4 +129,165 @@ internship-ml-productivity-classifier/
 ├── .gitignore
 │
 └── README.md
+```
+
 ---
+
+## 🚀 Kaip paleisti projektą
+Šis projektas skirtas vykdyti per **vieną CLI įėjimo tašką (`run.py`)**.  
+Jokių Jupyter notebook’ų nereikia, visi rezultatai atkuriami iš komandinės eilutės.
+
+### 1. Aplinkos paruošimas
+
+```text
+Python 3.10+
+```
+
+Rekomenduojama naudoti virtualią aplinką, kad būtų išvengta priklausomybių konfliktų:
+```bash
+python -m venv .venv
+```
+
+Aktvuoti virtualią aplinką:
+- Windows
+```bash
+.venv/Scripts/activate
+```
+
+- Linux/macOS
+```bash
+source .venv/bin/activate
+```
+
+Įdiegti projekto priklausomybes:
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Duomenų rinkinys
+
+Duomenų rinkinys turi būti šioje vietoje:
+```bash
+data/occupancy.csv
+```
+
+Tai laiko atžvilgiu išrikiuotas aplinkos jutiklių duomenų rinkinys, turintis šiuos stulpelius:
+- Temperature;
+- Humidity;
+- Light;
+- CO2;
+- HumidityRatio;
+- Occupancy (tikslinė reikšmė: 0 arba 1).
+ 
+Papildomas rankinis duomenų paruošimas prieš paleidžiant pipeline nereikalingas.
+
+
+### 3. Atskirų modelių treniravimas
+
+Visi treniravimo skriptai gali būti paleisti atskirai, tačiau rekomenduojamas būdas yra naudoti ```run.py```.
+
+Random Forest
+```bash
+python src/run.py train --model rf
+```
+
+Logistic Regression (su savybių skaliavimu)
+```bash
+python src/run.py train --model logreg
+```
+
+Baseline (DummyClassifier – dažniausios klasės prognozė)
+```bash
+python src/run.py train --model dummy
+```
+
+Kiekviena komanda išveda:
+- klaidų matricą (confusion matrix);
+- precision / recall / F1;
+- bendrą tikslumą (accuracy).
+
+
+### 4. Visų modelių palyginimas (hold-out vertinimas)
+
+Norint palyginti visus modelius tame pačiame duomenų padalinime, vykdoma:
+```bash
+python src/run.py compare
+```
+
+Sugeneruojamas failas:
+```text
+results/model_comparison.csv
+```
+
+Jame pateikiama:
+- accuracy;
+- class-wise precision / recall / F1;
+- confusion matrix components (TN / FP / FN / TP).
+
+
+### 5. Kryžminė validacija (patikimas vertinimas)
+
+Siekiant išvengti pernelyg optimistinių rezultatų iš vieno train/test padalinimo, naudojama:
+```bash
+python src/run.py cross-validate
+```
+
+Sugeneruojami failai:
+```text
+results/metrics_cv.csv
+results/metrics_cv_folds.csv
+```
+
+Šie rezultatai pateikia:
+- vidurkius ir standartinius nuokrypius tarp fold’ų;
+- metrikas kiekvienam atskiram fold’ui;
+- įrodymą, kad rezultatai nėra atsitiktinio padalinimo pasekmė.
+
+
+### 6. Savybių analizė
+
+Savybių svarba (Random Forest)
+```bash
+python src/feature_importance.py
+```
+
+Rezultatas:
+```text
+results/feature_importance.png
+```
+
+Savybių abliacijos eksperimentas
+```bash
+python src/ablation_plot.py
+```
+
+Rezultatas:
+```text
+results/ablation_test.png
+```
+
+Šios analizės padeda suprasti, kurie jutiklių signalai turi didžiausią įtaką prognozėms.
+
+
+### 7. Realiojo laiko simuliacija (nebūtina)
+
+Norint imituoti prognozavimą realiuoju laiku, naudojant slankųjį laiko langą:
+```bash
+python src/realtime_simulation.py
+```
+Tai imituoja modelio elgseną streaming / deployment tipo scenarijuje.
+
+
+### 8. Visų rezultatų atkūrimas
+
+Minimalus pilnas paleidimo scenarijus:
+```bash
+pip install -r requirements.txt
+python src/run.py train --model rf
+python src/run.py train --model logreg
+python src/run.py train --model dummy
+python src/run.py compare
+python src/run.py cross-validate
+```
+Visi rezultatai išsaugomi kataloge results/.
+
