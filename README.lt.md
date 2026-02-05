@@ -121,7 +121,7 @@ internship-ml-productivity-classifier/
 │       # Savybių abliacijos eksperimento rezultatų palyginimas
 │
 ├── notebooks/
-│   # Papildomi, neprivalomi eksploraciniai Jupyter notebook'ai
+│   # Papildomi, neprivalomi eksploraciniai notebook'ai
 │
 ├── requirements.txt
 │   # Projekto priklausomybės
