@@ -81,4 +81,4 @@ def pretty_print(y_true, y_pred) -> None:
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     print("Confusion matrix:\n", cm)
     print("\nClassification report:\n")
-    print(classification_report(y_true, y_pred, digits=2))
+    print(classification_report(y_true, y_pred, digits=2, zero_division=0))
