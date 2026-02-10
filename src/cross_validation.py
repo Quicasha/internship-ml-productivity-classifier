@@ -1,78 +1,118 @@
-import pandas as pd
-import numpy as np
+"""
+Time-series aware cross-validation for occupancy prediction.
+"""
 
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from typing import List, Dict, Any
+
+import numpy as np
+import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-from preprocess import prepare_data
+from preprocess import prepare_dataset
 from train_random_forest import build_model as build_rf
 from train_logistic import build_model as build_logreg
+from train_dummy import build_model as build_dummy
 
 
-def evaluate_cv(model_name: str, n_splits: int = 5):
+MODEL_BUILDERS = {
+    "rf": build_rf,
+    "logreg": build_logreg,
+    "dummy": build_dummy,
+}
+
+
+def _evaluate_fold(y_true, y_pred) -> Dict[str, float]:
     """
-    Perform time-series aware cross-validation.
-    This prevents data leakage by ensuring training data
-    always precedes validation data in time.
+    Compute fold metrics. Uses class=1 as the positive class (occupied=1).
+    zero_division=0 prevents warnings when a model predicts no positives.
     """
+    return {
+        "accuracy": float(accuracy_score(y_true, y_pred)),
+        "precision_1": float(precision_score(y_true, y_pred, pos_label=1, zero_division=0)),
+        "recall_1": float(recall_score(y_true, y_pred, pos_label=1, zero_division=0)),
+        "f1_1": float(f1_score(y_true, y_pred, pos_label=1, zero_division=0)),
+        "support": int(len(y_true)),
+    }
 
-    # Load and preprocess full dataset (no random split here)
-    X, y = prepare_data(return_full=True)
 
+def run_cross_validation(
+    models: List[str] | None = None,
+    n_splits: int = 5,
+    out_folds_path: str = "results/metrics_cv_folds.csv",
+    out_summary_path: str = "results/metrics_cv.csv",
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Run TimeSeriesSplit cross-validation for selected models and save results.
+
+    Returns:
+        folds_df: per-fold metrics
+        summary_df: mean/std aggregated per model
+    """
+    if models is None:
+        models = ["rf", "logreg", "dummy"]
+
+    # Validate model keys early (fail fast, less pain later).
+    unknown = [m for m in models if m not in MODEL_BUILDERS]
+    if unknown:
+        raise ValueError(f"Unknown model(s): {unknown}. Available: {list(MODEL_BUILDERS.keys())}")
+
+    # Load full dataset (already in chronological order in the CSV).
+    X, y = prepare_dataset()
+
+    # TimeSeriesSplit expects order preserved. We do NOT shuffle.
     tscv = TimeSeriesSplit(n_splits=n_splits)
 
-    records = []
+    records: List[Dict[str, Any]] = []
 
-    for fold, (train_idx, test_idx) in enumerate(tscv.split(X), start=1):
-        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
-        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    for model_key in models:
+        build_fn = MODEL_BUILDERS[model_key]
 
-        if model_name == "rf":
-            model = build_rf()
-        elif model_name == "logreg":
-            model = build_logreg()
-        else:
-            raise ValueError("Unsupported model")
+        for fold, (train_idx, test_idx) in enumerate(tscv.split(X), start=1):
+            # Works for both pandas and numpy containers.
+            X_train, X_test = X.iloc[train_idx], X.iloc[test_idx] if hasattr(X, "iloc") else (X[train_idx], X[test_idx])
+            y_train, y_test = y.iloc[train_idx], y.iloc[test_idx] if hasattr(y, "iloc") else (y[train_idx], y[test_idx])
 
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
+            model = build_fn()
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_test)
 
-        records.append({
-            "model": model_name,
-            "fold": fold,
-            "accuracy": accuracy_score(y_test, y_pred),
-            "precision_1": precision_score(y_test, y_pred, pos_label=1),
-            "recall_1": recall_score(y_test, y_pred, pos_label=1),
-            "f1_1": f1_score(y_test, y_pred, pos_label=1),
-            "support": len(y_test),
-        })
+            metrics = _evaluate_fold(y_test, y_pred)
 
-    return pd.DataFrame(records)
+            records.append({
+                "model": model_key,
+                "fold": fold,
+                **metrics,
+            })
 
+    folds_df = pd.DataFrame(records)
 
-def run():
-    all_results = []
-
-    for model in ["rf", "logreg"]:
-        df = evaluate_cv(model)
-        all_results.append(df)
-
-    results = pd.concat(all_results, ignore_index=True)
-
-    # Aggregate statistics per model
-    summary = (
-        results
+    summary_df = (
+        folds_df
         .groupby("model")[["accuracy", "precision_1", "recall_1", "f1_1"]]
         .agg(["mean", "std"])
         .reset_index()
     )
 
-    results.to_csv("results/metrics_cv_folds.csv", index=False)
-    summary.to_csv("results/metrics_cv.csv", index=False)
+    # Ensure output dir exists
+    os.makedirs(os.path.dirname(out_folds_path), exist_ok=True)
 
-    print("\nCross-validation summary:")
-    print(summary)
+    folds_df.to_csv(out_folds_path, index=False)
+    summary_df.to_csv(out_summary_path, index=False)
+
+    print("\nCross-validation summary (TimeSeriesSplit):")
+    print(summary_df)
+
+    return folds_df, summary_df
+
+
+def main() -> None:
+    run_cross_validation()
 
 
 if __name__ == "__main__":
-    run()
+    main()

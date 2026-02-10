@@ -1,6 +1,10 @@
 """
 Main entrypoint for running experiments.
 
+Commands:
+- train:   train one model on a holdout split
+- compare: train all models on the same holdout split
+- cross-validate: time-series aware cross-validation (TimeSeriesSplit)
 """
 
 import argparse
@@ -11,6 +15,7 @@ from train_random_forest import build_model as build_rf
 from train_logistic import build_model as build_logreg
 from train_dummy import build_model as build_dummy
 from metrics import pretty_print
+from cross_validation import run_cross_validation
 
 
 # Registry of available models
@@ -22,9 +27,7 @@ MODEL_REGISTRY = {
 
 
 def train_holdout(model_key: str, test_size: float, seed: int):
-    """
-    Train and evaluate a single model using a holdout split.
-    """
+    """Train and evaluate a single model using a holdout split."""
     if model_key not in MODEL_REGISTRY:
         raise ValueError(f"Unknown model: {model_key}")
 
@@ -48,9 +51,7 @@ def train_holdout(model_key: str, test_size: float, seed: int):
 
 
 def compare_models(test_size: float, seed: int):
-    """
-    Train and compare all models on the same holdout split.
-    """
+    """Train and compare all models on the same holdout split."""
     X, y = prepare_dataset()
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -72,34 +73,40 @@ def compare_models(test_size: float, seed: int):
 
 def main():
     parser = argparse.ArgumentParser(description="ML experiment runner")
-
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     # ---- train ----
-    train_p = subparsers.add_parser("train")
+    train_p = subparsers.add_parser("train", help="Train one model (holdout split)")
     train_p.add_argument("--model", required=True, choices=MODEL_REGISTRY.keys())
     train_p.add_argument("--test-size", type=float, default=0.3)
     train_p.add_argument("--seed", type=int, default=42)
 
     # ---- compare ----
-    compare_p = subparsers.add_parser("compare")
+    compare_p = subparsers.add_parser("compare", help="Compare all models (same holdout split)")
     compare_p.add_argument("--test-size", type=float, default=0.3)
     compare_p.add_argument("--seed", type=int, default=42)
+
+    # ---- cross-validate ----
+    cv_p = subparsers.add_parser("cross-validate", help="Time-series cross-validation (TimeSeriesSplit)")
+    cv_p.add_argument("--splits", type=int, default=5, help="Number of CV splits (TimeSeriesSplit)")
+    cv_p.add_argument(
+        "--models",
+        nargs="+",
+        default=["rf", "logreg", "dummy"],
+        choices=MODEL_REGISTRY.keys(),
+        help="Which models to evaluate",
+    )
 
     args = parser.parse_args()
 
     if args.command == "train":
-        train_holdout(
-            model_key=args.model,
-            test_size=args.test_size,
-            seed=args.seed,
-        )
+        train_holdout(model_key=args.model, test_size=args.test_size, seed=args.seed)
 
     elif args.command == "compare":
-        compare_models(
-            test_size=args.test_size,
-            seed=args.seed,
-        )
+        compare_models(test_size=args.test_size, seed=args.seed)
+
+    elif args.command == "cross-validate":
+        run_cross_validation(models=args.models, n_splits=args.splits)
 
 
 if __name__ == "__main__":
