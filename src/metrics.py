@@ -50,17 +50,24 @@ class Metrics:
 
 
 def compute_metrics(y_true, y_pred) -> Metrics:
+    """
+    Compute metrics for binary classification.
+
+    zero_division=0 prevents sklearn warnings when a model predicts
+    no samples for a given class (common for DummyClassifier baseline).
+    """
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
 
     acc = float(accuracy_score(y_true, y_pred))
-    p0 = float(precision_score(y_true, y_pred, pos_label=0))
-    r0 = float(recall_score(y_true, y_pred, pos_label=0))
-    f0 = float(f1_score(y_true, y_pred, pos_label=0))
 
-    p1 = float(precision_score(y_true, y_pred, pos_label=1))
-    r1 = float(recall_score(y_true, y_pred, pos_label=1))
-    f1 = float(f1_score(y_true, y_pred, pos_label=1))
+    p0 = float(precision_score(y_true, y_pred, pos_label=0, zero_division=0))
+    r0 = float(recall_score(y_true, y_pred, pos_label=0, zero_division=0))
+    f0 = float(f1_score(y_true, y_pred, pos_label=0, zero_division=0))
+
+    p1 = float(precision_score(y_true, y_pred, pos_label=1, zero_division=0))
+    r1 = float(recall_score(y_true, y_pred, pos_label=1, zero_division=0))
+    f1 = float(f1_score(y_true, y_pred, pos_label=1, zero_division=0))
 
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     tn, fp, fn, tp = [int(x) for x in cm.ravel()]
@@ -70,10 +77,18 @@ def compute_metrics(y_true, y_pred) -> Metrics:
 
     return Metrics(
         accuracy=acc,
-        precision_0=p0, recall_0=r0, f1_0=f0,
-        precision_1=p1, recall_1=r1, f1_1=f1,
-        support_0=support_0, support_1=support_1,
-        tn=tn, fp=fp, fn=fn, tp=tp,
+        precision_0=p0,
+        recall_0=r0,
+        f1_0=f0,
+        precision_1=p1,
+        recall_1=r1,
+        f1_1=f1,
+        support_0=support_0,
+        support_1=support_1,
+        tn=tn,
+        fp=fp,
+        fn=fn,
+        tp=tp,
     )
 
 

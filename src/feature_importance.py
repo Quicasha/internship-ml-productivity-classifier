@@ -1,31 +1,52 @@
+"""
+Random Forest feature importance visualization.
+
+Output:
+results/feature_importance.png
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
 
-DATA_PATH = "data/occupancy.csv"
-df = pd.read_csv(DATA_PATH)
+from preprocess import prepare_dataset, FEATURES
+from train_random_forest import build_model
 
-df = df.drop(columns=["date"])
+RESULTS_DIR = Path("results")
+RESULTS_DIR.mkdir(exist_ok=True)
+OUT_PATH = RESULTS_DIR / "feature_importance.png"
 
-X = df.drop(columns=["Occupancy"])
-y = df["Occupancy"]
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
+def main() -> None:
+    X, y = prepare_dataset()
 
-model = RandomForestClassifier(n_estimators=300, random_state=42, n_jobs=-1)
-model.fit(X_train, y_train)
+    # Holdout split only for fitting a representative model
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
 
-importances = pd.Series(model.feature_importances_, index=X.columns).sort_values(ascending=False)
+    model = build_model(random_state=42)
+    model.fit(X_train, y_train)
 
-print("Feature importance:")
-print(importances)
+    importances = model.feature_importances_
+    fi = pd.DataFrame({"feature": FEATURES, "importance": importances}).sort_values("importance", ascending=False)
 
-plt.figure()
-importances.plot(kind="bar")
-plt.title("Random Forest Feature Importance")
-plt.tight_layout()
-plt.savefig("results/feature_importance.png")
-print("\nSaved: results/feature_importance.png")
+    print("\nFeature importance (RandomForest):")
+    for _, row in fi.iterrows():
+        print(f"{row['feature']:>14}: {row['importance']:.6f}")
+
+    plt.figure()
+    plt.bar(fi["feature"], fi["importance"])
+    plt.xticks(rotation=45, ha="right")
+    plt.title("Feature Importance (RandomForest)")
+    plt.tight_layout()
+    plt.savefig(OUT_PATH)
+    print(f"\nSaved: {OUT_PATH.as_posix()}")
+
+
+if __name__ == "__main__":
+    main()

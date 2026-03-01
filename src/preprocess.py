@@ -1,12 +1,22 @@
 """
 Data loading and preprocessing utilities.
 
-This separation is deliberate and required for proper ML evaluation.
+Design rules:
+- This module ONLY loads data and prepares X/y (no splitting).
+- No randomness here (no train/test split).
+- Model-specific logic must live in train_*.py or run.py.
+
+Expected dataset:
+data/occupancy.csv with columns:
+Temperature, Humidity, Light, CO2, HumidityRatio, Occupancy
 """
 
+from __future__ import annotations
+
+from pathlib import Path
 import pandas as pd
 
-DATA_PATH = "data/occupancy.csv"
+DATA_PATH = Path("data") / "occupancy.csv"
 
 FEATURES = [
     "Temperature",
@@ -19,43 +29,35 @@ FEATURES = [
 TARGET = "Occupancy"
 
 
-def load_data() -> pd.DataFrame:
+def load_data(path: Path | str = DATA_PATH) -> pd.DataFrame:
     """
     Load raw occupancy dataset from CSV.
-
-    Returns
-    -------
-    pd.DataFrame
-        Raw dataset with all columns.
     """
-    df = pd.read_csv(DATA_PATH)
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Dataset not found: {path.as_posix()}")
 
-    # Basic sanity check
-    expected_cols = FEATURES + [TARGET]
-    missing = set(expected_cols) - set(df.columns)
-    if missing:
-        raise ValueError(f"Missing required columns: {missing}")
+    df = pd.read_csv(path)
 
+    # Optional: some versions contain a time column. We ignore it by default.
+    # (Models in this repo use only sensor features listed in FEATURES.)
     return df
 
 
-def prepare_dataset():
+def prepare_dataset(path: Path | str = DATA_PATH) -> tuple[pd.DataFrame, pd.Series]:
     """
     Prepare full dataset for modeling.
 
-    IMPORTANT:
-    - No train/test split here
-    - No randomness here
-    - No model-specific logic here
-
-    Returns
-    -------
-    X : pd.DataFrame
-        Feature matrix
-    y : pd.Series
-        Target vector
+    Returns:
+        X: feature matrix
+        y: target vector
     """
-    df = load_data()
+    df = load_data(path)
+
+    required = set(FEATURES + [TARGET])
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing required columns: {sorted(missing)}. Found: {list(df.columns)}")
 
     X = df[FEATURES].copy()
     y = df[TARGET].copy()

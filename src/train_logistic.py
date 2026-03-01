@@ -1,42 +1,39 @@
 """
 Logistic Regression training + evaluation (holdout split).
 
-Used by:
-- run.py (via build_model)
-- can be executed standalone
+- Can be executed standalone
+- Used by run.py and compare_models.py
+
+Outputs:
+- prints confusion matrix + classification report
+- can return Metrics + predictions for aggregation
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Any
+from typing import Tuple
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 
 from preprocess import prepare_dataset
-from metrics import pretty_print, compute_metrics
+from metrics import pretty_print, compute_metrics, Metrics
 
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(exist_ok=True)
 
 
-MODEL_NAME = "logreg"
-
-
 def build_model(random_state: int = 42) -> Pipeline:
     """
-    Build a Logistic Regression pipeline with scaling.
+    Build Logistic Regression pipeline with scaling.
 
-    Why StandardScaler:
-    - Logistic regression is sensitive to feature magnitudes
-    - Scaling makes optimization stable and coefficients comparable
-
-    Solver notes:
-    - liblinear: good for small/medium datasets and binary classification
-    - max_iter: bump it to avoid non-convergence
+    Why scaling:
+    - Logistic Regression is sensitive to feature magnitude.
+    - StandardScaler stabilizes optimization and makes coefficients comparable.
     """
     return Pipeline(
         steps=[
@@ -53,30 +50,47 @@ def build_model(random_state: int = 42) -> Pipeline:
     )
 
 
-def train_and_eval(test_size: float = 0.2, random_state: int = 42) -> Dict[str, Any]:
+def train_holdout(
+    test_size: float = 0.2,
+    random_state: int = 42,
+    return_preds: bool = False,
+) -> Tuple[Metrics, pd.Series, pd.Series] | Metrics:
     """
-    Train on a holdout split and return metrics as a dict.
+    Train on a holdout split and evaluate.
+
+    If return_preds=True, returns:
+        (metrics, y_true, y_pred)
+    Otherwise returns:
+        metrics
     """
-    X_train, X_test, y_train, y_test = prepare_dataset(
+    X, y = prepare_dataset()
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
         test_size=test_size,
         random_state=random_state,
+        stratify=y,
     )
 
     model = build_model(random_state=random_state)
     model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+    y_pred = pd.Series(model.predict(X_test), index=y_test.index)
 
     print("\n=== LogisticRegression (holdout) ===")
     pretty_print(y_test, y_pred)
 
-    row = compute_metrics(y_test, y_pred).to_row(model_name="LogisticRegression")
-    return row
+    m = compute_metrics(y_test, y_pred)
+
+    if return_preds:
+        return m, y_test, y_pred
+    return m
 
 
 def main() -> None:
-    row = train_and_eval()
+    m = train_holdout()
     out_path = RESULTS_DIR / "metrics_logreg_holdout.csv"
-    pd.DataFrame([row]).to_csv(out_path, index=False)
+    pd.DataFrame([m.to_row("LogisticRegression")]).to_csv(out_path, index=False)
     print(f"\nSaved: {out_path.as_posix()}")
 
 
